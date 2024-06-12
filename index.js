@@ -17,11 +17,6 @@ function getRandomStanza() {
 
 async function pushDates(dates) {
     try {
-        console.log('Fetching changes from remote repository...');
-        await git.fetch('origin', 'main');
-
-        console.log('Rebasing or merging changes...');
-        await git.rebase(['origin/main']);
 
         for (const dateStr of dates) {
             const date = moment(dateStr, "DD/MM/YYYY");
@@ -61,6 +56,78 @@ async function pushDates(dates) {
 }
 
 const dates = ["03/07/2023", "08/07/2023", "09/07/2023",  "10/07/2023", "11/07/2023", "12/07/2023", "13/07/2023", "14/07/2023", "15/07/2023", "22/07/2023", "06/08/2023", "09/08/2023", "12/08/2023", "13/08/2023", "16/08/2023", "19/08/2023", "21/08/2023", "22/08/2023", "24/08/2023", "25/08/2023", "10/09/2023", "13/09/2023", "16/09/2023", "17/09/2023", "20/09/2023", "23/09/2023", "25/09/2023", "26/09/2023", "28/09/2023", "29/09/2023", "15/10/2023", "22/10/2023", "29/10/2023", "30/10/2023", "31/10/2023", "01/11/2023", "02/11/2023", "03/11/2023", "04/11/2023"];
-pushDates(dates);
 
+console.log(dates)
+
+
+function parseDate(dateString) {
+    const [day, month, year] = dateString.split('/');
+    return new Date(`${year}-${month}-${day}`);
+}
+
+function formatDate(date) {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+}
+
+function findNextMonday(date) {
+    const dayOfWeek = date.getDay();
+    const daysUntilMonday = dayOfWeek === 1 ? 7 : 8 - dayOfWeek;
+    const nextMonday = new Date(date.getTime() + daysUntilMonday * 24 * 60 * 60 * 1000);
+    return nextMonday;
+}
+
+function subtractSixMonths(date) {
+    return new Date(date.getFullYear(), date.getMonth() - 6, date.getDate());
+}
+
+function generateNewDatesArray(dates) {
+    const numDaysArray = [0];
+    for (let i = 1; i < dates.length; i++) {
+        const prevDate = parseDate(dates[i - 1]);
+        const currDate = parseDate(dates[i]);
+        const diffTime = Math.abs(currDate - prevDate);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        numDaysArray.push(diffDays);
+    }
+
+    const today = new Date();
+    const sixMonthsAgo = subtractSixMonths(today);
+    const newStartDate = findNextMonday(sixMonthsAgo);
+
+    const newDatesArray = [formatDate(newStartDate)];
+    let currentDate = newStartDate;
+
+    for (let i = 1; i < numDaysArray.length; i++) {
+        const daysToAdd = numDaysArray[i];
+        const newDate = new Date(currentDate.getTime() + daysToAdd * 24 * 60 * 60 * 1000);
+        newDatesArray.push(formatDate(newDate));
+        currentDate = newDate;
+    }
+
+    return newDatesArray;
+}
+
+
+const newDates = generateNewDatesArray(dates)
+
+console.log(newDates)
+
+function executeWithInterval(times, seconds) {
+  let count = 0;
+
+  function run() {
+    if (count < times) {
+      pushDates(newDates);
+      count++;
+      setTimeout(run, seconds * 1000); // Convert seconds to milliseconds
+    }
+  }
+
+  run();
+}
+
+executeWithInterval(5, 12); // Executes exampleFunction 5 times with a 2-second interval
 
